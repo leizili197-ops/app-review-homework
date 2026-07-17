@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.DS_Store
+reviews_cache.json
+analysis_result.json
+.codebuddy/

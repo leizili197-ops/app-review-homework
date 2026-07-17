@@ -1,0 +1,5 @@
+# 注意：app-store-scraper 要求 requests==2.23.0，但 streamlit 需要 >=2.27
+# requests 2.34.2 完全向后兼容，以下为实际安装顺序
+streamlit>=1.28.0
+app-store-scraper>=0.3.5
+requests>=2.27,<3
