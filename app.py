@@ -482,7 +482,7 @@ def parse_manual_reviews(raw_text: str) -> list:
 # 5. 缓存读写
 # ============================================================================
 def load_cache() -> Optional[dict]:
-    """读取本地缓存的评论数据（断网兜底）。"""
+    """读取本地缓存的评论数据（仅作可选离线参考，v2.0 不再作为自动兜底）。"""
     if CACHE_FILE.exists():
         try:
             with open(CACHE_FILE, "r", encoding="utf-8") as f:
@@ -839,7 +839,7 @@ def analyze_and_display(reviews_data: list, app_name: str, app_id: str, from_cac
             "💡 排查建议：\n"
             "1）在侧边栏点「🔗 测试连接」验证 Key 是否有效；\n"
             "2）如果提示余额不足，去 https://platform.deepseek.com 充值；\n"
-            "3）评论数据已缓存，修复 Key 后重新点「开始分析」即可，不用重新抓取。"
+            "3）修复 Key 后重新点「开始分析」会重新实时抓取，无需其他操作。"
         )
         return
 
@@ -936,8 +936,8 @@ def main():
     cache_data = load_cache()
     if cache_data and not app_url:
         st.info(
-            f"💡 检测到缓存数据（{cache_data['total_reviews']} 条评论），"
-            f"输入新链接将重新抓取，或直接点击分析按钮使用缓存。"
+            f"💡 检测到本地缓存（{cache_data['total_reviews']} 条评论，可选离线参考）。"
+            f"输入美区链接即可实时抓取并分析；若抓取失败会提示手动粘贴评论。"
         )
 
     # ---------- 操作按钮 ----------
@@ -1021,44 +1021,20 @@ def main():
                 progress_bar.progress(0.5, text="格式化数据...")
 
                 if not formatted_reviews:
-                    # RSS/备用都失败 → 尝试本地缓存
-                    cache = load_cache()
-                    if cache:
-                        reviews_data = cache["reviews"]
-                        app_name = cache["app_name"]
-                        app_id = cache["app_id"]
-                        from_cache = True
-                        st.info(f"✅ 已从缓存加载 {len(reviews_data)} 条评论")
-                    else:
-                        # 抓不到也没有缓存 → 进入"手动粘贴"模式（不崩溃）
-                        st.session_state.need_manual = True
-                        progress_bar.progress(1.0, text="无可抓取数据")
+                    # v2.0：实时抓取未拿到数据，不再回退缓存，直接进入"手动粘贴"模式（不崩溃）
+                    st.session_state.need_manual = True
+                    progress_bar.progress(1.0, text="实时抓取无数据")
                 else:
                     reviews_data = formatted_reviews
-                    save_cache(reviews_data, app_name, app_id)
+                    save_cache(reviews_data, app_name, app_id)  # 仅作为可选离线产物保存
                     progress_bar.progress(0.6, text="评论已缓存")
             except Exception as e:
                 st.warning(f"⚠️ 抓取失败: {e}")
-                cache = load_cache()
-                if cache:
-                    reviews_data = cache["reviews"]
-                    app_name = cache["app_name"]
-                    app_id = cache["app_id"]
-                    from_cache = True
-                    st.info(f"✅ 已从缓存加载 {len(reviews_data)} 条评论")
-                else:
-                    st.session_state.need_manual = True
-        else:
-            # 没填链接 → 用缓存；也没缓存 → 手动粘贴
-            cache = load_cache()
-            if cache:
-                reviews_data = cache["reviews"]
-                app_name = cache["app_name"]
-                app_id = cache["app_id"]
-                from_cache = True
-                st.info(f"📦 使用缓存数据：**{app_name}** — {len(reviews_data)} 条评论")
-            else:
+                # v2.0：不再回退缓存，直接进入手动粘贴模式
                 st.session_state.need_manual = True
+        else:
+            # 没填链接 → 没有实时数据可用，直接进入"手动粘贴"模式
+            st.session_state.need_manual = True
 
         # 有数据就走正常分析流程
         if reviews_data:
