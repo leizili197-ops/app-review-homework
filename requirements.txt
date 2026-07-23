@@ -1,5 +1,14 @@
-# 注意：app-store-scraper 要求 requests==2.23.0，但 streamlit 需要 >=2.27
-# requests 2.34.2 完全向后兼容，以下为实际安装顺序
+# 一键安装依赖（单条命令即可，无版本冲突）：
+#   pip install -r requirements.txt
+#
+# 说明：
+# - 主抓取路径使用 Apple 官方 RSS Feed，无需额外库；
+# - app-store-scraper 是「备用」抓取方式。它上游把 requests 死锁在 2.23.0，
+#   与 streamlit 需要的 >=2.27 冲突，会导致单条 pip 命令安装失败。
+#   因此这里不放入 requirements，改为按需懒加载：
+#   想启用备用抓取时，单独执行：  pip install --no-deps app-store-scraper
+#   （加 --no-deps 跳过它的 requests 死锁约束，复用已装的新版 requests）
+
 streamlit>=1.28.0
-app-store-scraper>=0.3.5
+python-docx>=1.1.0
 requests>=2.27,<3
